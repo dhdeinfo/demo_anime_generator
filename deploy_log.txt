@@ -1,0 +1,59 @@
+⏳ Deploy dimulai...
+​
+Netlify Build                                                 
+────────────────────────────────────────────────────────────────
+​
+> Version
+  @netlify/build 35.1.6
+​
+> Flags
+  accountId: 6889ddd40ef3277718022696
+​
+> Current directory
+  D:\PROGRAM\laragon\www\streaming_generator_demo
+​
+> Config file
+  No config file was defined: using default values.
+​
+> Context
+  production
+
+Deploying to Netlify
+────────────────────────────────────────────────────────────────
+
+[32mDeploy path: [39mD:\PROGRAM\laragon\www\streaming_generator_demo\output
+
+[33m⠋[39m Uploading blobs to deploy store...
+
+[32m√[39m Finished uploading blobs to deploy store
+[33m⠋[39m Hashing files...
+[33m⠋[39m Looking for a functions cache...
+[32m√[39m No cached functions were found
+[32m√[39m Finished hashing 
+[33m⠋[39m CDN diffing files...
+[32m√[39m CDN requesting 2645 files
+[33m⠋[39m Uploading 2645 files
+[32m√[39m Finished uploading 2645 assets
+[33m⠋[39m Waiting for deploy to go live...
+[32m√[39m Deploy is live!
+​
+Netlify Build Complete                                        
+────────────────────────────────────────────────────────────────
+​
+(Netlify Build completed in 5m 27.6s)
+
+🚀 Deploy complete
+────────────────────────────────────────────────────────────────
+
+   ╭─────────────── ⬥  Production deploy is live ⬥  ────────────────╮
+   │                                                                │
+   │   Deployed to production URL: https://nontonanimesubindo.icu   │
+   │                                                                │
+   │                      Unique deploy URL:                        │
+   │   https://6978c31f6c28e00961c85350--streamingku.netlify.app    │
+   │                                                                │
+   ╰────────────────────────────────────────────────────────────────╯
+
+[32mBuild logs: [39m        https://app.netlify.com/projects/streamingku/deploys/6978c31f6c28e00961c85350
+[32mFunction logs: [39m     https://app.netlify.com/projects/streamingku/logs/functions
+[32mEdge function Logs: [39mhttps://app.netlify.com/projects/streamingku/logs/edge-functions
