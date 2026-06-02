@@ -3,6 +3,10 @@ Generator Streaming - Localhost
 
 script semua di buat menggunakan ChatGpt
 ---
+Web Nonton gratis :
+[nontonanimeindo.id](https://nontonanimeindo.id)
+dracin.icu
+[dracin](https://dracinsub.com/)
 
 # Script Web Scraping untuk Pembelajaran dan Pengembangan
 
