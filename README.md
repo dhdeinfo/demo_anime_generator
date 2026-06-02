@@ -41,8 +41,6 @@ Dengan menggunakan script ini, Anda dianggap telah memahami dan menyetujui selur
 
 ---
 
-Versi yang lebih santai untuk dibagikan di GitHub:
-
 > ⚠️ **Disclaimer**
 > Script ini dibuat untuk tujuan edukasi dan pembelajaran web scraping. Gunakan secara bertanggung jawab dan pastikan mematuhi Terms of Service website yang menjadi sumber data. Penulis tidak bertanggung jawab atas penyalahgunaan script ini atau pelanggaran yang dilakukan oleh pengguna. Gunakan untuk riset, pembelajaran, dan pengembangan kemampuan pemrograman secara etis.
 
