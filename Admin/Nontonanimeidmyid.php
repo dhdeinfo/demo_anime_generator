@@ -1,9 +1,31 @@
 <?php
+// --- Helper Functions ---
 function slugify($text) {
     $text = preg_replace('~[^\pL\d]+~u', '-', $text);
     $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
     $text = preg_replace('~[^-\w]+~', '', $text);
     return strtolower(trim($text, '-')) ?: 'post-' . time();
+}
+
+function fetch_url($url) {
+    if (ini_get('allow_url_fopen')) {
+        $context = stream_context_create([
+            'http' => ['header' => "User-Agent: Mozilla/5.0\r\n"]
+        ]);
+        $data = @file_get_contents($url, false, $context);
+        if ($data !== false) return $data;
+    }
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_USERAGENT => "Mozilla/5.0"
+    ]);
+    $data = curl_exec($ch);
+    curl_close($ch);
+    return $data ?: false;
 }
 
 function extract_info($html, $label) {
@@ -24,37 +46,46 @@ function extract_between($html, $start, $end) {
 function extract_download_links($html) {
     $links = '';
     preg_match_all('/<div class="soraurlx">(.*?)<\/div>/is', $html, $blocks);
-
     foreach ($blocks[1] as $block) {
         preg_match('/<strong>(.*?)<\/strong>/i', $block, $resMatch);
         $res = $resMatch[1] ?? 'Unknown';
-
         preg_match_all('/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/is', $block, $aTags);
-
         $linkItems = [];
         for ($i = 0; $i < count($aTags[0]); $i++) {
             $url = htmlspecialchars($aTags[1][$i]);
             $text = strip_tags($aTags[2][$i]);
             $linkItems[] = "<a href=\"$url\" target=\"_blank\">$text</a>";
         }
-
         $joinedLinks = implode(' | ', $linkItems);
         $links .= "<li><strong>$res:</strong> $joinedLinks</li>\n";
     }
-
     return $links ?: '<li>Tidak tersedia</li>';
 }
 
+// --- MAIN PROCESS ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    ob_start();
+    ob_implicit_flush(true);
+    ob_end_flush();
+    echo "<script>document.getElementById('log-box').innerHTML='';</script>";
+    echo "<div class='notif notif-info'>⏳ Mulai proses scraping...</div>";
+    echo "<div id='log-box' class='log-box'>";
+
     $urls = explode("\n", trim($_POST['urls'] ?? ''));
+    $total = count($urls);
+    $count = 0;
+
     foreach ($urls as $url) {
         $url = trim($url);
         if (empty($url)) continue;
+        $count++;
 
-        $html = @file_get_contents($url);
+        echo "<div class='notif notif-info'>[$count/$total] 🔗 Proses: $url</div>";
+        flush();
+
+        $html = fetch_url($url);
         if (!$html) {
             echo "<div class='notif notif-error'>❌ Gagal ambil: $url</div>";
+            flush();
             continue;
         }
 
@@ -62,49 +93,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         preg_match('/<h1[^>]*>(.*?)<\/h1>/i', $html, $m);
         $title = trim(strip_tags($m[1] ?? ''));
         if (!$title) {
-            preg_match('/<title>(.*?)<\/title>/i', $html, $matchTitle);
-            $title = html_entity_decode(str_replace('- Nontonanimeindo.web.id', '', $matchTitle[1] ?? "Tanpa Judul"));
+            preg_match('/<title>(.*?)<\/title>/i', $html, $mt);
+            $title = str_replace('- Nontonanimeindo.web.id', '', $mt[1] ?? 'Tanpa Judul');
         }
         $slug = slugify($title);
 
-        // Release date
+        // Release
         preg_match('/<span[^>]*class=["\']updated["\'][^>]*>([^<]+)<\/span>/i', $html, $releaseMatch);
-        $dateString = isset($releaseMatch[1]) ? trim($releaseMatch[1]) : '';
+        $dateString = $releaseMatch[1] ?? '';
         $release = $dateString ? date('Y-m-d', strtotime($dateString)) : date('Y-m-d');
 
-        // Genres
-        if (!function_exists('convertGenreLinksToTags')) {
-            function convertGenreLinksToTags($html) {
-                preg_match('/<div class="genxed">(.*?)<\/div>/is', $html, $matches);
-                if (!$matches) return '';
-                preg_match_all('/<a[^>]+href="[^"]+"[^>]*>(.*?)<\/a>/i', $matches[1], $genreMatches);
-                $genres = array_map('trim', $genreMatches[1]);
-                $tags = array_map(fn($g) => '<span class="tag">'.htmlspecialchars($g).'</span>', $genres);
-                return '<div class="genre-tags">'.implode("\n", $tags).'</div>';
-            }
-        }
-        if (!function_exists('extractGenres')) {
-            function extractGenres($html) {
-                preg_match('/<div class="genxed">(.*?)<\/div>/is', $html, $matches);
-                if (!$matches) return [];
-                preg_match_all('/<a[^>]+href="[^"]+"[^>]*>(.*?)<\/a>/i', $matches[1], $genreMatches);
-                return array_map('trim', $genreMatches[1]);
-            }
-        }
-
-        // Poster & iframe
+        // Poster
         preg_match('/<div class="thumb">.*?<img[^>]+src="([^"]+)/is', $html, $mPoster);
         $poster = $mPoster[1] ?? 'https://via.placeholder.com/150x220.png?text=Poster';
 
+        // Iframe (dibungkus element <iframe>)
         preg_match('/<iframe[^>]+src="([^"]+)"/i', $html, $mIframe);
         $iframeSrc = $mIframe[1] ?? '';
-        $iframe = $iframeSrc ? "<iframe src=\"$iframeSrc\" width=\"100%\" height=\"480\" frameborder=\"0\" allowfullscreen></iframe>" : '';
+        $iframe = $iframeSrc
+            ? '<iframe src="' . htmlspecialchars($iframeSrc) . '" width="100%" height="480" frameborder="0" allowfullscreen></iframe>'
+            : '';
+
+        // Sinopsis
+        $sinopsis = extract_between($html, '<strong>Sinopsis:</strong>', '</p>');
+
+        // Series
+        preg_match('/<h2[^>]*itemprop="partOfSeries"[^>]*>(.*?)<\/h2>/i', $html, $mSeries);
+        $series = trim(strip_tags($mSeries[1] ?? ''));
+
+        // Genres
+        preg_match('/<div class="genxed">(.*?)<\/div>/is', $html, $matches);
+        $genres = [];
+        if ($matches) {
+            preg_match_all('/<a[^>]+>(.*?)<\/a>/', $matches[1], $gm);
+            $genres = $gm[1] ?? [];
+        }
 
         // Info
-        $sinopsis = extract_between($html, '<strong>Sinopsis:</strong>', '</p>');
-        preg_match('/<h2[^>]*itemprop="partOfSeries"[^>]*>(.*?)<\/h2>/i', $html, $mSeries);
-        $partOfSeries = trim(strip_tags($mSeries[1] ?? ''));
-
         $status   = extract_info($html, 'Status');
         $studio   = extract_info($html, 'Studio');
         $durasi   = extract_info($html, 'Duration');
@@ -113,47 +138,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $released = extract_info($html, 'Released');
         $season   = extract_info($html, 'Season');
         $type     = extract_info($html, 'Type');
-        $genre_tags = convertGenreLinksToTags($html);
-
         $download_links = extract_download_links($html);
-        $genres = extractGenres($html);
 
-        // Simpan file HTML kosong (placeholder)
+        // Save file placeholder
         if (!is_dir("../blog")) mkdir("../blog", 0777, true);
         file_put_contents("../blog/$slug.html", "<!-- content generated -->");
 
-        echo "<div class='notif notif-success'>✅ Berhasil dibuat: <a href='../blog/$slug.html' target='_blank'>$slug.html</a></div>";
-
-        // Update posts.json
+        // Update JSON
         $jsonFile = __DIR__ . '/../data.json';
         $posts = file_exists($jsonFile) ? json_decode(file_get_contents($jsonFile), true) : [];
-
         $newPost = [
-            'title'     => $title,
-            'slug'      => $slug,
-            'url'       => "/blog/$slug.html",
+            'title' => $title,
+            'slug' => $slug,
+            'url'  => "/blog/$slug.html",
             'thumbnail' => $poster,
-            'published' => $release ?: date('Y-m-d'),
+            'published' => $release,
             'summary'   => $sinopsis,
             'type'      => $type,
             'season'    => $season,
             'studio'    => $studio,
             'status'    => $status,
             'genres'    => $genres,
-            'series'    => $partOfSeries,
+            'series'    => $series,
             'iframe'    => $iframe,
             'durasi'    => $durasi,
             'country'   => $country,
             'network'   => $network,
             'download_links' => $download_links
         ];
-
         $posts = array_filter($posts, fn($p) => $p['slug'] !== $slug);
         array_unshift($posts, $newPost);
-        file_put_contents($jsonFile, json_encode(array_values($posts), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        echo "<div class='notif notif-info'>📝 posts.json diperbarui</div>";
+        file_put_contents($jsonFile, json_encode(array_values($posts), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE));
+
+        echo "<div class='notif notif-success'>✅ Selesai: $title</div>";
+        flush();
     }
-    $notif = ob_get_clean();
+    echo "</div>";
 }
 ?>
 <!DOCTYPE html>
@@ -172,23 +192,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     main.container {max-width:900px;margin:40px auto;background:#161616;padding:30px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.6);}
     main h2 {text-align:center;margin-bottom:20px;color:#ff6b6b;}
     form {display:flex;flex-direction:column;gap:16px;}
-    form label {font-weight:bold;margin-bottom:4px;display:block;}
-    textarea {width:100%;padding:12px;border-radius:6px;border:1px solid #333;background:#1f1f1f;color:#eee;font-size:14px;resize:vertical;}
-    button {padding:12px;background:#ff6b6b;border:none;border-radius:6px;color:#fff;font-size:16px;font-weight:bold;cursor:pointer;transition:.3s;align-self:flex-start;}
-    button:hover {background:#ff4040;}
-    .notif {padding:12px;margin-top:20px;border-radius:6px;font-weight:bold;text-align:center;}
+    textarea {width:100%;padding:12px;border-radius:6px;border:1px solid #333;background:#1f1f1f;color:#eee;}
+    button {padding:12px;background:#ff6b6b;border:none;border-radius:6px;color:#fff;font-size:16px;font-weight:bold;cursor:pointer;}
+    .notif {padding:8px;margin-top:8px;border-radius:6px;font-weight:bold;font-size:14px;}
     .notif-success {background:#2ecc71;color:#fff;}
     .notif-info {background:#3498db;color:#fff;}
     .notif-error {background:#e74c3c;color:#fff;}
-    footer {margin-top:40px;background:#161616;padding:15px 0;text-align:center;color:#888;font-size:13px;}
-    @media(max-width:600px){
-      header .container {flex-direction:column;align-items:flex-start;}
-      header nav {margin-top:10px;}
-      header nav a {margin:0 10px 0 0;}
-      main.container {padding:20px;}
-      button {width:100%;text-align:center;}
-    }
+    .log-box {background:#1f1f1f;border:1px solid #333;border-radius:6px;padding:12px;margin-top:20px;max-height:400px;overflow:auto;}
   </style>
+  <script>
+    // auto-scroll log
+    const observer = new MutationObserver(() => {
+      const logBox = document.getElementById('log-box');
+      if (logBox) logBox.scrollTop = logBox.scrollHeight;
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+      const logBox = document.getElementById('log-box');
+      if (logBox) observer.observe(logBox, { childList: true });
+    });
+  </script>
 </head>
 <body>
   <header>
@@ -198,8 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <a href="/streaming_generator_demo/">Home</a>
         <a href="nontonanimeid.php">nontonanimeid</a>
         <a href="layaranime.php">layaranime</a>
-		<a href="Nontonanimeidmyid.php">Nontonanimeid.my.id</a>
-		<a href="samehada.php">samehada</a>
+        <a href="Nontonanimeidmyid.php">Nontonanimeid.my.id</a>
         <a href="/sitemap.php">Completed</a>
         <a href="#">Bookmark</a>
         <a href="#">Schedule</a>
@@ -210,18 +231,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   <main class="container">
     <h2>🔗 Generator Anichy</h2>
     <form method="post">
-      <label>Masukkan Banyak Link Anichy (satu per baris):</label>
+      <label>Masukkan Banyak Link (satu per baris):</label>
       <textarea name="urls" rows="10" required></textarea>
       <button type="submit">🚀 Generate Semua</button>
     </form>
-
-    <div>
-      <?= $notif ?? '' ?>
-    </div>
+    <div id="log-box" class="log-box"></div>
   </main>
-
-  <footer>
-    <p>&copy; 2025 Nontonanimeindo.web.id. All rights reserved.</p>
-  </footer>
 </body>
 </html>
