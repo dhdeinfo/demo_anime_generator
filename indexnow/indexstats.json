@@ -1,0 +1,93 @@
+[
+    {
+        "date": "2025-11-13 12:25:20",
+        "domain": "nontonanimesubindo.icu",
+        "engine": "Google",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:25:28",
+        "domain": "nontonanimesubindo.icu",
+        "engine": "Bing",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:25:36",
+        "domain": "nontonanimesubindo.icu",
+        "engine": "Bing",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:25:41",
+        "domain": "nontonanimesubindo.icu",
+        "engine": "Google",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:26:01",
+        "domain": "streamingku.netlify.app",
+        "engine": "Google",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:28:11",
+        "domain": "streamingku.netlify.app",
+        "engine": "Google",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:28:22",
+        "domain": "nontonanimesubindo.icu",
+        "engine": "Google",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:28:31",
+        "domain": "dhdeinfo.com",
+        "engine": "Google",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:28:34",
+        "domain": "dhdeinfo.com",
+        "engine": "Bing",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:28:51",
+        "domain": "dhdeinfo.com",
+        "engine": "Google",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:30:35",
+        "domain": "nontonanimesubindo.icu",
+        "engine": "Bing (fallback)",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:30:43",
+        "domain": "dhdeinfo.com",
+        "engine": "Bing (fallback)",
+        "count": 0,
+        "samples": []
+    },
+    {
+        "date": "2025-11-13 12:30:46",
+        "domain": "dhdeinfo.com",
+        "engine": "Bing",
+        "count": 0,
+        "samples": []
+    }
+]

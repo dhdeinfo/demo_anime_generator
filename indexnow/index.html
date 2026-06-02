@@ -1,1 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bing IndexNow Local Tool</title>
+<link rel="stylesheet" href="assets/style.css">
+  <style>
+    body {background:#0f0f10;font-family:'Segoe UI',Arial,sans-serif;color:#eee;margin:0;padding:0;}
+    .wrap {max-width:800px;margin:40px auto;background:#161616;padding:30px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.6);}
+    h2 {margin-bottom:20px;color:#ff6b6b;text-align:center;}
+    form {display:flex;flex-direction:column;gap:16px;}
+    label {font-weight:bold;margin-bottom:4px;display:block;}
+    input[type="text"], input[type="file"], textarea, select {
+      width:100%;padding:10px;border-radius:6px;border:1px solid #333;
+      background:#1f1f1f;color:#eee;font-size:14px;
+    }
+    input[type="file"] {background:#222;color:#ccc;}
+    textarea {resize:vertical;}
+    button {
+      padding:12px;background:#ff6b6b;border:none;border-radius:6px;
+      color:#fff;font-size:16px;font-weight:bold;cursor:pointer;
+      transition:.3s;
+    }
+    button:hover {background:#ff4040;}
+    .links {margin:0;padding:15px;text-align:center;background:#161616;box-shadow:0 2px 6px rgba(0,0,0,.5);}
+    .links a {
+      display:inline-block;margin:6px;padding:8px 14px;
+      background:#2ecc71;color:#fff;text-decoration:none;
+      border-radius:6px;transition:.3s;font-size:14px;
+    }
+    .links a:hover {background:#27ae60;}
+    #thumbPreview {display:block;margin-top:10px;max-height:150px;border-radius:6px;}
+    /* Popup */
+    #popup {
+      position:fixed;top:0;left:0;right:0;bottom:0;
+      background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:999;
+    }
+    .popup-box {
+      background:#1f1f1f;padding:25px 30px;border-radius:10px;text-align:center;
+      box-shadow:0 4px 12px rgba(0,0,0,.6);max-width:500px;width:90%;max-height:90%;overflow:auto;
+    }
+    .popup-box h3 {color:#2ecc71;margin-bottom:15px;}
+    .popup-box input {width:100%;margin-bottom:15px;}
+    .popup-box pre {
+      text-align:left;background:#111;padding:10px;border-radius:6px;
+      color:#eee;font-size:13px;max-height:300px;overflow:auto;
+    }
+    .popup-box button {
+      background:#ff6b6b;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;margin-top:15px;
+    }
+    .popup-box button:hover {background:#ff4040;}
+    .success {color:#2ecc71;}
+    .error {color:#e74c3c;}
+    .update {color:#f39c12;}
+    /* animasi loading dots */
+    .loading-dots::after {
+      content: '...';
+      animation: dots 1s steps(3, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+  </style>
+<style>
 
+.container {  padding:20px; border-radius:10px; max-width:720px; margin:auto; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+h2 { color:#0078d7; }
+input, textarea { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; font-size:15px; }
+button { background:#0078d7; color:#fff; padding:10px 16px; border:none; border-radius:6px; cursor:pointer; }
+button:hover { background:#005fa3; }
+pre { background:#111; color:#0f0; padding:12px; border-radius:6px; overflow:auto; max-height:300px; }
+#settings {  padding:15px; border-radius:8px; margin-bottom:20px; }
+label { font-weight: bold; }
+small { color:#666; }
+</style>
+</head>
+<body>
+ <div class="links">
+    <a href="/streaming_generator_demo/">⚙️ Dashboard</a>
+    <a href="/streaming_generator_demo/admin">⚙️ Dashboard Admin</a>
+	<a href="/streaming_generator_demo/ads.php">⚙️ Dashboard Ads</a>
+	<a href="/streaming_generator_demo/deploy.php">⚙️ Dashboard Deploy</a>
+    <a href="#" onclick="openPopup(event)">⚙️ Jalankan Generator</a>
+    <a href="/streaming_generator_demo/output/index.html" target="_blank">📂 Lihat Output</a>
+  </div>
+<div class="container">
+  <h2>🔍 Bing IndexNow - Local Notifier</h2>
+  <p>Masukkan URL yang ingin dikirim ke Bing IndexNow. Domain dan key disimpan otomatis di lokal.</p>
+  
+  <div id="settings">
+    <label>🌐 Domain</label>
+    <input type="text" id="host" placeholder="https://example.com">
+    
+    <label>🔑 IndexNow Key</label>
+    <input type="text" id="key" placeholder="contoh: a3f9bff3b32d4f1c8f6f88bba1112334">
+    <button id="saveConfig">💾 Simpan Pengaturan</button>
+    <small>Konfigurasi ini akan tersimpan di file <b>config.json</b>.</small>
+  </div>
+
+  <label>📄 URL yang akan dikirim (pisahkan per baris)</label>
+  <textarea id="urls" rows="6" placeholder="https://example.com/page1
+https://example.com/page2"></textarea>
+
+  <div>
+    <input type="text" id="sitemap" placeholder="https://example.com/sitemap.xml">
+    <button class="btn-inline" id="loadSitemap">📥 Ambil dari Sitemap</button>
+  </div>
+
+  <br>
+  <button id="sendBtn">🚀 Kirim ke Bing</button>
+
+  <h3>Hasil</h3>
+  <pre id="result">Belum ada pengiriman.</pre>
+
+  <h3>Riwayat Pengiriman</h3>
+  <div id="log">Memuat...</div>
+</div>
+
+<script>
+async function loadConfig(){
+  const res = await fetch('indexnow.php?config');
+  const data = await res.json();
+  if(data.host) document.getElementById('host').value = data.host;
+  if(data.key) document.getElementById('key').value = data.key;
+}
+
+async function saveConfig(){
+  const host = document.getElementById('host').value.trim();
+  const key = document.getElementById('key').value.trim();
+  if(!host || !key) return alert('Lengkapi domain dan key!');
+  const res = await fetch('indexnow.php?saveConfig', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({host,key})
+  });
+  const data = await res.json();
+  alert(data.message || 'Config disimpan.');
+}
+
+async function loadLog(){
+  const res = await fetch('indexnow.php?logs');
+  const data = await res.json();
+  let html = '';
+  if(data.length === 0){
+    html = '<i>Belum ada riwayat pengiriman.</i>';
+  }else{
+    html = '<ul>';
+    data.slice(-10).reverse().forEach(item=>{
+      html += `<li>${item.date} → ${item.urls.length} URL ke <b>${item.host}</b> (${item.response_code})</li>`;
+    });
+    html += '</ul>';
+  }
+  document.getElementById('log').innerHTML = html;
+}
+
+document.getElementById('saveConfig').onclick = saveConfig;
+
+document.getElementById('sendBtn').onclick = async ()=>{
+  const host = document.getElementById('host').value.trim();
+  const key = document.getElementById('key').value.trim();
+  const urls = document.getElementById('urls').value.trim().split(/\s+/);
+
+  if(!host || !key || urls.length === 0){
+    alert('Lengkapi semua data!');
+    return;
+  }
+
+  document.getElementById('result').textContent = 'Mengirim...';
+
+  try {
+    const res = await fetch('indexnow.php', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({host,key,urls})
+    });
+    const data = await res.json();
+    document.getElementById('result').textContent = JSON.stringify(data,null,2);
+    document.getElementById('urls').value = '';
+    loadLog();
+  } catch(e){
+    document.getElementById('result').textContent = 'Error: '+e.message;
+  }
+};
+
+// ====== Ambil link dari sitemap ======
+document.getElementById('loadSitemap').onclick = async ()=>{
+  const sitemap = document.getElementById('sitemap').value.trim();
+  if(!sitemap) return alert('Masukkan URL sitemap.xml!');
+  document.getElementById('result').textContent = 'Mengambil link dari sitemap...';
+
+  try {
+    const res = await fetch('indexnow.php?getsitemap', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({sitemap})
+    });
+    const data = await res.json();
+    if(data.error){
+      alert(data.error);
+    } else {
+      document.getElementById('urls').value = data.urls.join("\n");
+      document.getElementById('result').textContent = `Berhasil memuat ${data.urls.length} URL dari sitemap.`;
+    }
+  } catch(e){
+    document.getElementById('result').textContent = 'Error mengambil sitemap: '+e.message;
+  }
+};
+
+// load saat awal
+loadConfig();
+loadLog();
+</script>
+</body>
+</html>
